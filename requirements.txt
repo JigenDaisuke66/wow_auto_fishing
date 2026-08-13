@@ -1,0 +1,6 @@
+numpy>=1.26
+opencv-python>=4.9
+Pillow>=10.0
+PyAutoGUI>=0.9.54
+PyQt5>=5.15
+pywin32>=306
