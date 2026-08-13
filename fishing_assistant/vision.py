@@ -42,7 +42,11 @@ class ChangeMetrics:
     changed_ratio: float
 
 
-def load_templates(paths: Iterable[str], log: Optional[LogCallback] = None) -> list[Template]:
+def load_templates(
+    paths: Iterable[str],
+    log: Optional[LogCallback] = None,
+    unreadable_message: str = "⚠ 无法读取模板：{name}",
+) -> list[Template]:
     templates: list[Template] = []
     for path in paths:
         # np.fromfile + imdecode supports Chinese and other Unicode paths on Windows.
@@ -53,7 +57,7 @@ def load_templates(paths: Iterable[str], log: Optional[LogCallback] = None) -> l
             image = None
         if image is None or image.size == 0:
             if log:
-                log(f"⚠ 无法读取模板：{Path(path).name}")
+                log(unreadable_message.format(name=Path(path).name))
             continue
         templates.append(Template(path, image))
     return templates

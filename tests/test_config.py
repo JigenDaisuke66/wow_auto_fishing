@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import patch
 
 from fishing_assistant.config import AppConfig, load_config, save_config
+from fishing_assistant.texts import EN_US, ZH_CN, text
 
 
 class ConfigTests(unittest.TestCase):
@@ -28,6 +29,16 @@ class ConfigTests(unittest.TestCase):
         serialized = write_text.call_args.args[0]
         self.assertEqual(json.loads(serialized)["image_paths"], [r"D:\截图\浮漂.png"])
         self.assertIn("浮漂.png", serialized)
+
+    def test_old_config_defaults_to_chinese(self):
+        with patch("pathlib.Path.exists", return_value=True), patch(
+            "pathlib.Path.read_text", return_value="{}"
+        ):
+            self.assertEqual(load_config().language, "zh_CN")
+
+    def test_translation_keys_match(self):
+        self.assertEqual(set(ZH_CN), set(EN_US))
+        self.assertEqual(text("start", "en_US"), "Start")
 
 
 if __name__ == "__main__":

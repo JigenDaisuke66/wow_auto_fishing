@@ -12,6 +12,7 @@ CONFIG_FILE = Path("fishing_assistant_config.json")
 @dataclass
 class AppConfig:
     image_paths: list[str] = None
+    language: str = "zh_CN"
     fishing_hotkey: str = ""
     bait_hotkey: str = ""
     duration_hours: int = 2
@@ -30,6 +31,8 @@ class AppConfig:
             self.image_paths = []
 
     def normalize(self) -> None:
+        if self.language not in {"zh_CN", "en_US"}:
+            self.language = "zh_CN"
         self.image_paths = [str(path) for path in self.image_paths]
         self.afk_time_min = max(1, int(self.afk_time_min))
         self.afk_time_max = max(self.afk_time_min, int(self.afk_time_max))

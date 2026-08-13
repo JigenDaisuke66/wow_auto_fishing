@@ -6,6 +6,7 @@ import time
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import (
     QFileDialog,
+    QComboBox,
     QDoubleSpinBox,
     QFormLayout,
     QFrame,
@@ -23,7 +24,7 @@ from PyQt5.QtWidgets import (
 )
 
 from .config import AppConfig, load_config, save_config
-from .texts import text
+from .texts import LANGUAGES, text
 from .worker import FishingWorker
 
 
@@ -55,7 +56,8 @@ class FishingAssistantWindow(QMainWindow):
         self.config = load_config()
         self.worker: FishingWorker | None = None
         self._closing = False
-        self.setWindowTitle(text("window_title"))
+        self._changing_language = False
+        self.setWindowTitle(self._t("window_title"))
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
         self.setStyleSheet(STYLE)
         self.resize(720, 760)
@@ -63,33 +65,36 @@ class FishingAssistantWindow(QMainWindow):
         self._build_ui()
         self._populate_config()
 
+    def _t(self, key: str, **values) -> str:
+        return text(key, self.config.language, **values)
+
     def _build_ui(self) -> None:
         root = QWidget()
         layout = QVBoxLayout(root)
         layout.setContentsMargins(24, 20, 24, 20)
         layout.setSpacing(14)
 
-        title = QLabel(text("window_title"))
+        title = QLabel(self._t("window_title"))
         title.setObjectName("title")
-        subtitle = QLabel(text("subtitle"))
+        subtitle = QLabel(self._t("subtitle"))
         subtitle.setObjectName("subtitle")
         layout.addWidget(title)
         layout.addWidget(subtitle)
 
         self.tabs = QTabWidget()
-        self.tabs.addTab(self._general_tab(), text("tab_general"))
-        self.tabs.addTab(self._window_tab(), text("tab_window"))
-        self.tabs.addTab(self._detection_tab(), text("tab_detection"))
-        self.tabs.addTab(self._log_tab(), text("tab_log"))
+        self.tabs.addTab(self._general_tab(), self._t("tab_general"))
+        self.tabs.addTab(self._window_tab(), self._t("tab_window"))
+        self.tabs.addTab(self._detection_tab(), self._t("tab_detection"))
+        self.tabs.addTab(self._log_tab(), self._t("tab_log"))
         layout.addWidget(self.tabs, 1)
 
         controls = QHBoxLayout()
         controls.addStretch()
-        self.stop_button = QPushButton(text("stop"))
+        self.stop_button = QPushButton(self._t("stop"))
         self.stop_button.setObjectName("danger")
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.stop_fishing)
-        self.start_button = QPushButton(text("start"))
+        self.start_button = QPushButton(self._t("start"))
         self.start_button.setObjectName("primary")
         self.start_button.clicked.connect(self.start_fishing)
         controls.addWidget(self.stop_button)
@@ -106,16 +111,16 @@ class FishingAssistantWindow(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.setContentsMargins(18, 18, 18, 18)
-        layout.addWidget(self._section(text("images")))
-        hint = QLabel(text("image_hint"))
+        layout.addWidget(self._section(self._t("images")))
+        hint = QLabel(self._t("image_hint"))
         hint.setObjectName("subtitle")
         layout.addWidget(hint)
         self.image_list = QListWidget()
         layout.addWidget(self.image_list, 1)
         buttons = QHBoxLayout()
-        add_button = QPushButton(text("add_images"))
+        add_button = QPushButton(self._t("add_images"))
         add_button.clicked.connect(self.add_images)
-        clear_button = QPushButton(text("clear_images"))
+        clear_button = QPushButton(self._t("clear_images"))
         clear_button.clicked.connect(self.clear_images)
         buttons.addWidget(add_button)
         buttons.addWidget(clear_button)
@@ -129,9 +134,9 @@ class FishingAssistantWindow(QMainWindow):
         self.bait_hotkey.setPlaceholderText("1")
         self.duration = QSpinBox()
         self.duration.setRange(1, 24)
-        form.addRow(text("fishing_hotkey"), self.fishing_hotkey)
-        form.addRow(text("bait_hotkey"), self.bait_hotkey)
-        form.addRow(text("duration"), self.duration)
+        form.addRow(self._t("fishing_hotkey"), self.fishing_hotkey)
+        form.addRow(self._t("bait_hotkey"), self.bait_hotkey)
+        form.addRow(self._t("duration"), self.duration)
         layout.addLayout(form)
         return tab
 
@@ -139,14 +144,22 @@ class FishingAssistantWindow(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.setContentsMargins(18, 18, 18, 18)
-        layout.addWidget(self._section(text("window_title_label")))
-        hint = QLabel(text("window_title_hint"))
+        language_form = QFormLayout()
+        self.language = QComboBox()
+        for code, name in LANGUAGES.items():
+            self.language.addItem(name, code)
+        self.language.currentIndexChanged.connect(self._language_changed)
+        language_form.addRow(self._t("language"), self.language)
+        layout.addLayout(language_form)
+
+        layout.addWidget(self._section(self._t("window_title_label")))
+        hint = QLabel(self._t("window_title_hint"))
         hint.setObjectName("subtitle")
         layout.addWidget(hint)
         self.game_window_title = QLineEdit()
         layout.addWidget(self.game_window_title)
 
-        layout.addWidget(self._section(text("afk_settings")))
+        layout.addWidget(self._section(self._t("afk_settings")))
         form = QFormLayout()
         self.afk_key = QLineEdit()
         range_widget = QWidget()
@@ -157,11 +170,11 @@ class FishingAssistantWindow(QMainWindow):
         self.afk_max = QSpinBox()
         self.afk_max.setRange(1, 60)
         range_layout.addWidget(self.afk_min)
-        range_layout.addWidget(QLabel(text("to")))
+        range_layout.addWidget(QLabel(self._t("to")))
         range_layout.addWidget(self.afk_max)
         range_layout.addStretch()
-        form.addRow(text("afk_key"), self.afk_key)
-        form.addRow(text("afk_range"), range_widget)
+        form.addRow(self._t("afk_key"), self.afk_key)
+        form.addRow(self._t("afk_range"), range_widget)
         layout.addLayout(form)
         layout.addStretch()
         return tab
@@ -170,7 +183,7 @@ class FishingAssistantWindow(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.setContentsMargins(18, 18, 18, 18)
-        hint = QLabel(text("detection_hint"))
+        hint = QLabel(self._t("detection_hint"))
         hint.setWordWrap(True)
         hint.setObjectName("subtitle")
         layout.addWidget(hint)
@@ -182,11 +195,11 @@ class FishingAssistantWindow(QMainWindow):
         self.pixel_ratio = self._double_spin(0.01, 1.0, 0.01, 2)
         self.confirmation_frames = QSpinBox()
         self.confirmation_frames.setRange(1, 10)
-        form.addRow(text("confidence"), self.confidence)
-        form.addRow(text("mean_difference"), self.mean_difference)
-        form.addRow(text("pixel_threshold"), self.pixel_threshold)
-        form.addRow(text("pixel_ratio"), self.pixel_ratio)
-        form.addRow(text("confirmation_frames"), self.confirmation_frames)
+        form.addRow(self._t("confidence"), self.confidence)
+        form.addRow(self._t("mean_difference"), self.mean_difference)
+        form.addRow(self._t("pixel_threshold"), self.pixel_threshold)
+        form.addRow(self._t("pixel_ratio"), self.pixel_ratio)
+        form.addRow(self._t("confirmation_frames"), self.confirmation_frames)
         layout.addLayout(form)
         layout.addStretch()
         return tab
@@ -195,7 +208,7 @@ class FishingAssistantWindow(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         layout.setContentsMargins(18, 18, 18, 18)
-        self.status = QLabel(text("ready"))
+        self.status = QLabel(self._t("ready"))
         self.status.setObjectName("subtitle")
         self.log_output = QTextEdit()
         self.log_output.setReadOnly(True)
@@ -212,6 +225,10 @@ class FishingAssistantWindow(QMainWindow):
         return spin
 
     def _populate_config(self) -> None:
+        self._changing_language = True
+        index = self.language.findData(self.config.language)
+        self.language.setCurrentIndex(max(0, index))
+        self._changing_language = False
         self.fishing_hotkey.setText(self.config.fishing_hotkey)
         self.bait_hotkey.setText(self.config.bait_hotkey)
         self.duration.setValue(self.config.duration_hours)
@@ -229,6 +246,7 @@ class FishingAssistantWindow(QMainWindow):
     def _read_config(self) -> AppConfig:
         config = AppConfig(
             image_paths=list(self.config.image_paths),
+            language=self.language.currentData() or "zh_CN",
             fishing_hotkey=self.fishing_hotkey.text().strip(),
             bait_hotkey=self.bait_hotkey.text().strip(),
             duration_hours=self.duration.value(),
@@ -247,7 +265,7 @@ class FishingAssistantWindow(QMainWindow):
 
     def add_images(self) -> None:
         paths, _ = QFileDialog.getOpenFileNames(
-            self, text("add_images"), "", "Images (*.png *.jpg *.jpeg *.bmp);;All Files (*)"
+            self, self._t("add_images"), "", self._t("image_filter")
         )
         for path in paths:
             if path not in self.config.image_paths:
@@ -263,7 +281,7 @@ class FishingAssistantWindow(QMainWindow):
     def _refresh_images(self) -> None:
         self.image_list.clear()
         if not self.config.image_paths:
-            self.image_list.addItem(text("no_images"))
+            self.image_list.addItem(self._t("no_images"))
             return
         self.image_list.addItems([os.path.basename(path) for path in self.config.image_paths])
 
@@ -276,20 +294,20 @@ class FishingAssistantWindow(QMainWindow):
             self.config = self._read_config()
             save_config(self.config)
         except OSError as exc:
-            self.log(f"⚠ 保存配置失败：{exc}")
+            self.log(self._t("save_failed", error=exc))
 
     def start_fishing(self) -> None:
         self._save()
         if not self.config.image_paths:
-            self.log("❌ 请先添加至少一张浮漂模板")
+            self.log(self._t("need_image"))
             self.tabs.setCurrentIndex(0)
             return
         if not self.config.fishing_hotkey:
-            self.log("❌ 请填写钓鱼快捷键")
+            self.log(self._t("need_hotkey"))
             self.tabs.setCurrentIndex(0)
             return
         if not self.config.game_window_title:
-            self.log("❌ 请填写游戏窗口标题")
+            self.log(self._t("need_window"))
             self.tabs.setCurrentIndex(1)
             return
 
@@ -299,7 +317,7 @@ class FishingAssistantWindow(QMainWindow):
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(True)
         self.tabs.setCurrentIndex(3)
-        self.log("▶ 钓鱼程序已启动")
+        self.log(self._t("started"))
         self.worker.start()
 
     def stop_fishing(self) -> None:
@@ -314,7 +332,7 @@ class FishingAssistantWindow(QMainWindow):
             worker.deleteLater()
         self.start_button.setEnabled(True)
         self.stop_button.setEnabled(False)
-        self.log("■ 钓鱼程序已停止")
+        self.log(self._t("stopped"))
         if self._closing:
             QTimer.singleShot(0, self.close)
 
@@ -326,3 +344,18 @@ class FishingAssistantWindow(QMainWindow):
             event.ignore()
             return
         event.accept()
+
+    def _language_changed(self) -> None:
+        if self._changing_language:
+            return
+        self.config = self._read_config()
+        try:
+            save_config(self.config)
+        except OSError:
+            pass
+        old_central = self.takeCentralWidget()
+        if old_central:
+            old_central.deleteLater()
+        self.setWindowTitle(self._t("window_title"))
+        self._build_ui()
+        self._populate_config()
