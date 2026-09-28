@@ -2,3 +2,7 @@ __pycache__/
 *.py[cod]
 fishing_assistant_config.json
 tests/tmp*/
+
+# Generated packaging output; upload release archives to GitHub Releases.
+/build/
+/dist/

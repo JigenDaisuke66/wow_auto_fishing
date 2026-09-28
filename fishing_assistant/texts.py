@@ -55,7 +55,7 @@ EN_US = {
 TRANSLATIONS = {"zh_CN": ZH_CN, "en_US": EN_US}
 
 
-def text(key: str, language: str = "zh_CN", **values) -> str:
+def text(message_id: str, language: str = "zh_CN", **values) -> str:
     selected = TRANSLATIONS.get(language, ZH_CN)
-    value = selected.get(key, ZH_CN.get(key, key))
+    value = selected.get(message_id, ZH_CN.get(message_id, message_id))
     return value.format(**values) if values else value

@@ -21,8 +21,8 @@ class FishingWorker(QThread):
         super().__init__(parent)
         self.config = config
 
-    def _t(self, key: str, **values) -> str:
-        return text(key, self.config.language, **values)
+    def _t(self, message_id: str, **values) -> str:
+        return text(message_id, self.config.language, **values)
 
     def stop(self) -> None:
         self.requestInterruption()

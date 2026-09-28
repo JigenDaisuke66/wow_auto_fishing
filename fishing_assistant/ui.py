@@ -65,8 +65,8 @@ class FishingAssistantWindow(QMainWindow):
         self._build_ui()
         self._populate_config()
 
-    def _t(self, key: str, **values) -> str:
-        return text(key, self.config.language, **values)
+    def _t(self, message_id: str, **values) -> str:
+        return text(message_id, self.config.language, **values)
 
     def _build_ui(self) -> None:
         root = QWidget()
